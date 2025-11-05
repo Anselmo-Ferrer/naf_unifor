@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    /* Diretórios */
+    "rootDir": "./src",
+    "outDir": "./dist",
+
+    /* Módulos e alvo de compilação */
+    "module": "CommonJS",
+    "target": "ES2020",
+
+    /* Tipos e libs do ambiente Node */
+    "lib": ["ES2020"],
+    "types": ["node"],
+
+    /* Geração de arquivos auxiliares */
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+
+    /* Verificações de tipo mais seguras */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
+    /* Configurações adicionais */
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}
