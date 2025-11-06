@@ -18,3 +18,13 @@ export const listarUsuarios = async (_req: Request, res: Response) => {
     return res.status(500).json({ error: error.message })
   }
 }
+
+export const deletarUsuario = async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id)
+    await usuarioService.deletar(id)
+    return res.status(200).json({ message: "Usuário deletado com sucesso" })
+  } catch (error: any) {
+    return res.status(400).json({ error: error.message })
+  }
+}

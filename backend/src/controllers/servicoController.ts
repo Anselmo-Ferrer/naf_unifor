@@ -1,7 +1,6 @@
 import { Request, Response } from "express"
 import * as servicoService from "../services/servicoService"
 
-// 🟣 Criar serviço
 export const criarServico = async (req: Request, res: Response) => {
   try {
     const servico = await servicoService.criar(req.body)
@@ -11,7 +10,6 @@ export const criarServico = async (req: Request, res: Response) => {
   }
 }
 
-// 🟢 Listar todos os serviços
 export const listarServicos = async (_req: Request, res: Response) => {
   try {
     const servicos = await servicoService.listar()
@@ -21,7 +19,6 @@ export const listarServicos = async (_req: Request, res: Response) => {
   }
 }
 
-// 🔵 Buscar serviço por ID
 export const buscarServicoPorId = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id)
@@ -37,7 +34,6 @@ export const buscarServicoPorId = async (req: Request, res: Response) => {
   }
 }
 
-// 🟠 Atualizar serviço
 export const atualizarServico = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id)
@@ -48,7 +44,6 @@ export const atualizarServico = async (req: Request, res: Response) => {
   }
 }
 
-// 🔴 Deletar serviço
 export const deletarServico = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id)

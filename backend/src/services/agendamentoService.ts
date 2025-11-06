@@ -1,10 +1,19 @@
 import prisma from "../prismaClient"
 
+interface AgendamentoData {
+  data: Date
+  horario: string
+  status?: string
+  observacoes?: string
+  servicoId: number
+  usuarioId: number
+}
+
 export const listar = async () => {
   return await prisma.agendamento.findMany({
     include: {
-      usuario: true,
       servico: true,
+      usuario: true,
     },
   })
 }
@@ -13,98 +22,109 @@ export const buscarPorId = async (id: number) => {
   return await prisma.agendamento.findUnique({
     where: { id },
     include: {
-      usuario: true,
       servico: true,
+      usuario: true,
     },
   })
 }
 
-export const criar = async (data: {
-  data: string | Date
-  status?: string
-  servicoId: number
-  usuarioId: number
-}) => {
-  // Validar se o usuário existe
-  const usuarioExiste = await prisma.usuario.findUnique({
-    where: { id: data.usuarioId },
-  })
+export const criar = async (dados: AgendamentoData) => {
+  const { data, horario, status, observacoes, servicoId, usuarioId } = dados
 
-  if (!usuarioExiste) {
-    throw new Error(`Usuário com ID ${data.usuarioId} não encontrado`)
+  // Verificar se o serviço existe
+  const servico = await prisma.servico.findUnique({
+    where: { id: servicoId },
+  })
+  if (!servico) {
+    throw new Error("Serviço não encontrado")
   }
 
-  // Validar se o serviço existe
-  const servicoExiste = await prisma.servico.findUnique({
-    where: { id: data.servicoId },
+  // Verificar se o usuário existe
+  const usuario = await prisma.usuario.findUnique({
+    where: { id: usuarioId },
   })
-
-  if (!servicoExiste) {
-    throw new Error(`Serviço com ID ${data.servicoId} não encontrado`)
+  if (!usuario) {
+    throw new Error("Usuário não encontrado")
   }
 
-  const agendamento = await prisma.agendamento.create({
+  return await prisma.agendamento.create({
     data: {
-      data: new Date(data.data),
-      status: data.status ?? "pendente",
-      servico: { connect: { id: data.servicoId } },
-      usuario: { connect: { id: data.usuarioId } },
+      data,
+      horario,
+      status: status || "pendente",
+      observacoes: observacoes || "",
+      servico: {
+        connect: { id: servicoId },
+      },
+      usuario: {
+        connect: { id: usuarioId },
+      },
     },
     include: {
-      usuario: true,
       servico: true,
+      usuario: true,
     },
   })
-
-  return agendamento
 }
 
-export const atualizar = async (
-  id: number,
-  data: Partial<{
-    data: string | Date
-    status: string
-    servicoId: number
-    usuarioId: number
-  }>
-) => {
-  // Validar se o usuário existe (se fornecido)
-  if (data.usuarioId) {
-    const usuarioExiste = await prisma.usuario.findUnique({
-      where: { id: data.usuarioId },
+export const atualizar = async (id: number, dados: Partial<AgendamentoData>) => {
+  const { data, horario, status, observacoes, servicoId, usuarioId } = dados
+
+  // Verificar se o agendamento existe
+  const agendamentoExiste = await prisma.agendamento.findUnique({
+    where: { id },
+  })
+  if (!agendamentoExiste) {
+    throw new Error("Agendamento não encontrado")
+  }
+
+  // Verificar se o serviço existe (se fornecido)
+  if (servicoId) {
+    const servico = await prisma.servico.findUnique({
+      where: { id: servicoId },
     })
-    if (!usuarioExiste) {
-      throw new Error(`Usuário com ID ${data.usuarioId} não encontrado`)
+    if (!servico) {
+      throw new Error("Serviço não encontrado")
     }
   }
 
-  // Validar se o serviço existe (se fornecido)
-  if (data.servicoId) {
-    const servicoExiste = await prisma.servico.findUnique({
-      where: { id: data.servicoId },
+  // Verificar se o usuário existe (se fornecido)
+  if (usuarioId) {
+    const usuario = await prisma.usuario.findUnique({
+      where: { id: usuarioId },
     })
-    if (!servicoExiste) {
-      throw new Error(`Serviço com ID ${data.servicoId} não encontrado`)
+    if (!usuario) {
+      throw new Error("Usuário não encontrado")
     }
   }
-
-  const updateData: any = {}
-
-  if (data.data) updateData.data = new Date(data.data)
-  if (data.status) updateData.status = data.status
-  if (data.servicoId) updateData.servico = { connect: { id: data.servicoId } }
-  if (data.usuarioId) updateData.usuario = { connect: { id: data.usuarioId } }
 
   return await prisma.agendamento.update({
     where: { id },
-    data: updateData,
+    data: {
+      ...(data && { data }),
+      ...(horario && { horario }),
+      ...(status && { status }),
+      ...(observacoes !== undefined && { observacoes }),
+      ...(servicoId && {
+        servico: {
+          connect: { id: servicoId },
+        },
+      }),
+      ...(usuarioId && {
+        usuario: {
+          connect: { id: usuarioId },
+        },
+      }),
+    },
     include: {
-      usuario: true,
       servico: true,
+      usuario: true,
     },
   })
 }
 
 export const deletar = async (id: number) => {
-  return await prisma.agendamento.delete({ where: { id } })
+  return await prisma.agendamento.delete({
+    where: { id },
+  })
 }

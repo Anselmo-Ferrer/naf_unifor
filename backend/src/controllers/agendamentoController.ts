@@ -35,15 +35,22 @@ export const buscarAgendamentoPorId = async (req: Request, res: Response) => {
 
 export const criarAgendamento = async (req: Request, res: Response) => {
   try {
-    const { data, status, servicoId, usuarioId } = req.body
+    const { data, horario, status, observacoes, servicoId, usuarioId } = req.body
 
-    if (!data || !servicoId || !usuarioId) {
-      return res
-        .status(400)
-        .json({ message: "Campos obrigatórios: data, servicoId e usuarioId." })
+    if (!data || !horario || !servicoId || !usuarioId) {
+      return res.status(400).json({ 
+        message: "Campos obrigatórios: data, horario, servicoId e usuarioId." 
+      })
     }
 
-    const novoAgendamento = await criar({ data, status, servicoId, usuarioId })
+    const novoAgendamento = await criar({ 
+      data: new Date(data), 
+      horario,
+      status, 
+      observacoes,
+      servicoId, 
+      usuarioId 
+    })
     res.status(201).json(novoAgendamento)
   } catch (error: any) {
     console.error("Erro ao criar agendamento:", error)
@@ -59,13 +66,15 @@ export const criarAgendamento = async (req: Request, res: Response) => {
 export const atualizarAgendamento = async (req: Request, res: Response) => {
   try {
     const { id } = req.params
-    const { data, status, servicoId, usuarioId } = req.body
+    const { data, horario, status, observacoes, servicoId, usuarioId } = req.body
 
     const agendamentoAtualizado = await atualizar(Number(id), {
-      data,
-      status,
-      servicoId,
-      usuarioId,
+      ...(data && { data: new Date(data) }),
+      ...(horario && { horario }),
+      ...(status && { status }),
+      ...(observacoes !== undefined && { observacoes }),
+      ...(servicoId && { servicoId }),
+      ...(usuarioId && { usuarioId }),
     })
 
     res.json(agendamentoAtualizado)
