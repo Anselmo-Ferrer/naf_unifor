@@ -175,3 +175,27 @@ export async function deletarUsuario(id: number): Promise<void> {
     throw new Error(error.error || 'Erro ao deletar usuário')
   }
 }
+
+export const atualizarAgendamento = async (id: number, dados: Partial<{
+  data?: Date
+  horario?: string
+  status?: string
+  observacoes?: string
+  servicoId?: number
+  usuarioId?: number
+}>) => {
+  const response = await fetch(`${API_URL}/agendamentos/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(dados),
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.message || 'Erro ao atualizar agendamento')
+  }
+
+  return response.json()
+}
