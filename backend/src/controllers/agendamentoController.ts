@@ -59,6 +59,10 @@ export const criarAgendamento = async (req: Request, res: Response) => {
       return res.status(404).json({ message: error.message })
     }
     
+    if (error.message?.includes("Já existe um agendamento")) {
+      return res.status(409).json({ message: error.message })
+    }
+
     res.status(500).json({ message: "Erro ao criar agendamento." })
   }
 }

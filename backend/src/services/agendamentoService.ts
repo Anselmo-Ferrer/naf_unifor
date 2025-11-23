@@ -47,6 +47,30 @@ export const criar = async (dados: AgendamentoData) => {
     throw new Error("Usuário não encontrado")
   }
 
+
+  const agendamentoExistente = await prisma.agendamento.findFirst({
+    where: {
+      data,
+      horario,
+      status: {
+        not: "cancelado", // Ignora agendamentos cancelados
+      },
+    },
+    include: {
+      usuario: {
+        select: {
+          nome: true,
+        },
+      },
+    },
+  })
+
+  if (agendamentoExistente) {
+    throw new Error(
+      `Já existe um agendamento para ${data} às ${horario}`
+    )
+  }
+
   return await prisma.agendamento.create({
     data: {
       data,

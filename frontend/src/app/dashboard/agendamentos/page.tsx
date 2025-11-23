@@ -2,9 +2,12 @@
 
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { Calendar, Clock, Mail, NotebookPenIcon, Phone, Timer, User } from 'lucide-react'
-import { listarAgendamentos, Agendamento } from '@/lib/api'
-import { isAuthenticated, isAdmin, removeUser } from '@/lib/auth'
+import { Calendar, Clock, Mail, BookOpen, Phone, Timer, User, CheckCircle, XCircle } from 'lucide-react'
+import { toast } from 'sonner'
+import { listarAgendamentos, Agendamento, atualizarAgendamento } from '@/lib/api'
+import { isAuthenticated, isAdmin } from '@/lib/auth'
+import Modal from '@/components/Modal'
+import Toaster from '@/components/Toaster'
 
 export default function AgendamentosAdmin() {
   const router = useRouter()
@@ -15,18 +18,28 @@ export default function AgendamentosAdmin() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [mounted, setMounted] = useState(false)
+  const [atualizandoId, setAtualizandoId] = useState<number | null>(null)
+  const [modalAberto, setModalAberto] = useState(false)
+  const [acaoModal, setAcaoModal] = useState<{ 
+    id: number
+    status: string
+    tipo: 'concluir' | 'cancelar'
+    nomeServico: string
+    nomeCliente: string
+  } | null>(null)
 
   useEffect(() => {
     setMounted(true)
     
-    // Verificar se está logado e é admin
     if (!isAuthenticated()) {
       router.push('/entrar')
       return
     }
 
     if (!isAdmin()) {
-      alert('Acesso negado. Apenas administradores podem acessar esta página.')
+      toast.error('Acesso negado', {
+        description: 'Apenas administradores podem acessar esta página.'
+      })
       router.push('/agendamentos')
       return
     }
@@ -35,17 +48,14 @@ export default function AgendamentosAdmin() {
   }, [router])
 
   useEffect(() => {
-    // Aplicar filtros
     let filtrados = [...agendamentos]
 
-    // Filtro por status
     if (filtroStatus !== 'todos') {
       filtrados = filtrados.filter(ag => 
         ag.status.toLowerCase() === filtroStatus.toLowerCase()
       )
     }
 
-    // Filtro por pesquisa
     if (termoPesquisa) {
       filtrados = filtrados.filter(ag =>
         ag.usuario.nome.toLowerCase().includes(termoPesquisa.toLowerCase()) ||
@@ -54,7 +64,6 @@ export default function AgendamentosAdmin() {
       )
     }
 
-    // Ordenar por data e horário (mais recentes primeiro)
     filtrados.sort((a, b) => {
       const dataA = new Date(a.data).getTime()
       const dataB = new Date(b.data).getTime()
@@ -76,19 +85,61 @@ export default function AgendamentosAdmin() {
     } catch (err: any) {
       console.error('Erro ao carregar agendamentos:', err)
       setError('Erro ao carregar agendamentos. Tente novamente.')
+      toast.error('Erro ao carregar agendamentos', {
+        description: 'Não foi possível carregar os dados.'
+      })
     } finally {
       setIsLoading(false)
     }
   }
 
-  const navegarPara = (rota: string) => {
-    router.push(rota)
+  const abrirModal = (
+    id: number, 
+    status: string, 
+    tipo: 'concluir' | 'cancelar',
+    nomeServico: string,
+    nomeCliente: string
+  ) => {
+    setAcaoModal({ id, status, tipo, nomeServico, nomeCliente })
+    setModalAberto(true)
   }
 
-  const handleLogout = () => {
-    if (confirm('Deseja realmente sair?')) {
-      removeUser()
-      router.push('/entrar')
+  const fecharModal = () => {
+    setModalAberto(false)
+    setAcaoModal(null)
+  }
+
+  const confirmarAcao = async () => {
+    if (!acaoModal) return
+
+    try {
+      setAtualizandoId(acaoModal.id)
+      setError('')
+      
+      await atualizarAgendamento(acaoModal.id, { status: acaoModal.status })
+      
+      setAgendamentos(prev => 
+        prev.map(ag => ag.id === acaoModal.id ? { ...ag, status: acaoModal.status } : ag)
+      )
+      
+      fecharModal()
+      
+      if (acaoModal.tipo === 'concluir') {
+        toast.success('Agendamento concluído!', {
+          description: `O serviço "${acaoModal.nomeServico}" foi marcado como concluído.`
+        })
+      } else {
+        toast.success('Agendamento cancelado!', {
+          description: `O agendamento de "${acaoModal.nomeCliente}" foi cancelado.`
+        })
+      }
+    } catch (err: any) {
+      console.error('Erro ao atualizar status:', err)
+      toast.error('Erro ao atualizar agendamento', {
+        description: err.message || 'Tente novamente mais tarde.'
+      })
+    } finally {
+      setAtualizandoId(null)
     }
   }
 
@@ -132,16 +183,56 @@ export default function AgendamentosAdmin() {
     return agendamentos.filter(ag => ag.status.toLowerCase() === status).length
   }
 
-  // Prevenir hidratação SSR
+  const podeAtualizar = (status: string) => {
+    const statusLower = status.toLowerCase()
+    return statusLower !== 'cancelado' && statusLower !== 'concluido' && statusLower !== 'concluído'
+  }
+
   if (!mounted) {
     return null
   }
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* SIDEBAR */}
+      <Toaster />
+      
+      {/* Modal de Confirmação */}
+      <Modal
+        isOpen={modalAberto}
+        onClose={fecharModal}
+        title={acaoModal?.tipo === 'concluir' ? 'Concluir Agendamento' : 'Cancelar Agendamento'}
+        description={
+          acaoModal?.tipo === 'concluir'
+            ? 'Tem certeza que deseja marcar este agendamento como concluído? Esta ação não pode ser desfeita.'
+            : 'Tem certeza que deseja cancelar este agendamento? O cliente poderá ser notificado sobre o cancelamento.'
+        }
+        icon={
+          acaoModal?.tipo === 'concluir' ? (
+            <CheckCircle size={32} className="text-green-600" />
+          ) : (
+            <XCircle size={32} className="text-red-600" />
+          )
+        }
+        iconBgColor={acaoModal?.tipo === 'concluir' ? 'bg-green-100' : 'bg-red-100'}
+        onConfirm={confirmarAcao}
+        confirmText={acaoModal?.tipo === 'concluir' ? 'Concluir' : 'Cancelar'}
+        confirmColor={acaoModal?.tipo === 'concluir' ? 'green' : 'red'}
+        isLoading={atualizandoId !== null}
+      >
+        {acaoModal && (
+          <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-500">Serviço:</span>
+              <span className="text-sm font-medium text-gray-800">{acaoModal.nomeServico}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-500">Cliente:</span>
+              <span className="text-sm font-medium text-gray-800">{acaoModal.nomeCliente}</span>
+            </div>
+          </div>
+        )}
+      </Modal>
 
-      {/* CONTEÚDO PRINCIPAL */}
       <div className="flex-1 p-10 overflow-y-auto">
         <header className="mb-10">
           <h1 className="text-3xl text-blue-600 m-0 font-bold">Agendamentos</h1>
@@ -156,7 +247,6 @@ export default function AgendamentosAdmin() {
           </div>
         )}
 
-        {/* Filtros */}
         <div className="mb-6 flex flex-col md:flex-row gap-4">
           <input
             type="text"
@@ -179,7 +269,6 @@ export default function AgendamentosAdmin() {
           </select>
         </div>
 
-        {/* Cards de estatísticas rápidas */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
             <div className="text-gray-500 text-sm">Total</div>
@@ -199,7 +288,6 @@ export default function AgendamentosAdmin() {
           </div>
         </div>
 
-        {/* Lista de agendamentos */}
         {isLoading ? (
           <div className="text-center py-10">
             <div className="inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
@@ -241,7 +329,7 @@ export default function AgendamentosAdmin() {
 
                     {agendamento.observacoes && (
                       <p className="text-gray-500 text-sm italic mb-3 flex items-center gap-1">
-                        <NotebookPenIcon size={18} color='#044CF4'/> {agendamento.observacoes}
+                        <BookOpen size={18} color='#044CF4'/> {agendamento.observacoes}
                       </p>
                     )}
 
@@ -268,6 +356,41 @@ export default function AgendamentosAdmin() {
                       <Mail size={18} color='#044CF4'/> {agendamento.usuario.email}  <Phone size={18} color='#044CF4'/> {agendamento.usuario.telefone}
                     </div>
                   </div>
+
+                  {podeAtualizar(agendamento.status) && (
+                    <div className="flex gap-2 ml-4">
+                      <button
+                        onClick={() => abrirModal(
+                          agendamento.id, 
+                          'concluido', 
+                          'concluir',
+                          agendamento.servico.nome,
+                          agendamento.usuario.nome
+                        )}
+                        disabled={atualizandoId === agendamento.id}
+                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                        title="Marcar como concluído"
+                      >
+                        <CheckCircle size={18} />
+                        Concluir
+                      </button>
+                      <button
+                        onClick={() => abrirModal(
+                          agendamento.id, 
+                          'cancelado', 
+                          'cancelar',
+                          agendamento.servico.nome,
+                          agendamento.usuario.nome
+                        )}
+                        disabled={atualizandoId === agendamento.id}
+                        className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                        title="Cancelar agendamento"
+                      >
+                        <XCircle size={18} />
+                        Cancelar
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
