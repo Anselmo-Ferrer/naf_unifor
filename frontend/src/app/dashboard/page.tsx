@@ -2,9 +2,10 @@
 
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { TrendingUp, Calendar, Users, CheckCircle, Clock, XCircle } from 'lucide-react'
-import { listarAgendamentos, listarUsuarios, Agendamento, Usuario } from '@/lib/api'
-import { isAuthenticated, isAdmin, removeUser } from '@/lib/auth'
+import { TrendingUp, Calendar, CheckCircle, Clock, ArrowUpRight } from 'lucide-react'
+import { listarAgendamentos, listarUsuarios, Agendamento } from '@/lib/api'
+import { isAuthenticated, isAdmin } from '@/lib/auth'
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
 
 interface DashboardStats {
   totalAgendamentos: number
@@ -122,22 +123,9 @@ export default function Dashboard() {
     return resultado
   }
 
-  const navegarPara = (rota: string) => {
-    router.push(rota)
-  }
-
-  const handleLogout = () => {
-    if (confirm('Deseja realmente sair?')) {
-      removeUser()
-      router.push('/entrar')
-    }
-  }
-
   if (!mounted) {
     return null
   }
-
-  const maxValue = Math.max(...agendamentosPorMes.map(m => m.quantidade), 1)
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -162,55 +150,66 @@ export default function Dashboard() {
             {/* Cards de Estatísticas */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
               {/* Total de Agendamentos */}
-              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
-                <div className="flex items-center justify-between mb-4">
-                  <Calendar className="w-8 h-8 opacity-80" />
-                  <div className="bg-white/20 rounded-full px-3 py-1 text-xs font-semibold">
-                    Total
+              <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 text-white shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
+                      <Calendar className="w-6 h-6" />
+                    </div>
                   </div>
+                  <h2 className="text-sm font-medium opacity-90 mb-1">Total de Agendamentos</h2>
+                  <p className="text-4xl font-bold mb-2">{stats.totalAgendamentos}</p>
+                  <span className="text-xs opacity-75 flex items-center gap-1">
+                    <TrendingUp className="w-3 h-3" />
+                    Todos os registros
+                  </span>
                 </div>
-                <h2 className="text-sm font-medium opacity-90 mb-2">Total de Agendamentos</h2>
-                <p className="text-4xl font-bold mb-1">{stats.totalAgendamentos}</p>
-                <span className="text-xs opacity-80">Todos os registros</span>
               </div>
 
               {/* Pendentes */}
-              <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow border-l-4 border-yellow-500">
-                <div className="flex items-center justify-between mb-4">
-                  <Clock className="w-8 h-8 text-yellow-500" />
-                  <div className="bg-yellow-50 text-yellow-700 rounded-full px-3 py-1 text-xs font-semibold">
-                    {stats.pendentes}
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 relative overflow-hidden">
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-12 -mb-12"></div>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
+                      <Clock className="w-6 h-6" />
+                    </div>
                   </div>
+                  <h2 className="text-sm font-medium opacity-90 mb-1">Pendentes</h2>
+                  <p className="text-4xl font-bold mb-2">{stats.pendentes}</p>
+                  <span className="text-xs opacity-75">Aguardando confirmação</span>
                 </div>
-                <h2 className="text-sm font-medium text-gray-600 mb-2">Pendentes</h2>
-                <p className="text-3xl font-bold text-gray-800">{stats.pendentes}</p>
-                <span className="text-xs text-gray-500">Aguardando confirmação</span>
               </div>
 
               {/* Confirmados */}
-              <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow border-l-4 border-blue-500">
-                <div className="flex items-center justify-between mb-4">
-                  <CheckCircle className="w-8 h-8 text-blue-500" />
-                  <div className="bg-blue-50 text-blue-700 rounded-full px-3 py-1 text-xs font-semibold">
-                    {stats.confirmados}
+              <div className="bg-gradient-to-br from-blue-400 to-blue-500 rounded-2xl p-6 text-white shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-28 h-28 bg-white/10 rounded-full -ml-14 -mt-14"></div>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
+                      <CheckCircle className="w-6 h-6" />
+                    </div>
                   </div>
+                  <h2 className="text-sm font-medium opacity-90 mb-1">Confirmados</h2>
+                  <p className="text-4xl font-bold mb-2">{stats.confirmados}</p>
+                  <span className="text-xs opacity-75">Prontos para atender</span>
                 </div>
-                <h2 className="text-sm font-medium text-gray-600 mb-2">Confirmados</h2>
-                <p className="text-3xl font-bold text-gray-800">{stats.confirmados}</p>
-                <span className="text-xs text-gray-500">Prontos para atender</span>
               </div>
 
               {/* Concluídos */}
-              <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow border-l-4 border-green-500">
-                <div className="flex items-center justify-between mb-4">
-                  <TrendingUp className="w-8 h-8 text-green-500" />
-                  <div className="bg-green-50 text-green-700 rounded-full px-3 py-1 text-xs font-semibold">
-                    {stats.concluidos}
+              <div className="bg-gradient-to-br from-cyan-500 to-blue-500 rounded-2xl p-6 text-white shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full -mr-18 -mt-18"></div>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
+                      <TrendingUp className="w-6 h-6" />
+                    </div>
                   </div>
+                  <h2 className="text-sm font-medium opacity-90 mb-1">Concluídos</h2>
+                  <p className="text-4xl font-bold mb-2">{stats.concluidos}</p>
+                  <span className="text-xs opacity-75">Atendimentos finalizados</span>
                 </div>
-                <h2 className="text-sm font-medium text-gray-600 mb-2">Concluídos</h2>
-                <p className="text-3xl font-bold text-gray-800">{stats.concluidos}</p>
-                <span className="text-xs text-gray-500">Atendimentos finalizados</span>
               </div>
             </div>
 
@@ -257,65 +256,78 @@ export default function Dashboard() {
             </div> */}
 
             {/* Gráfico de Agendamentos por Mês */}
-            <div className="bg-white rounded-xl p-8 shadow-sm">
-              <div className="flex items-center justify-between mb-6">
+            <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
+              <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-800">Agendamentos por Mês</h2>
-                  <p className="text-sm text-gray-500 mt-1">Últimos 6 meses</p>
+                  <h2 className="text-2xl font-bold text-gray-800">Agendamentos por Mês</h2>
+                  <p className="text-sm text-gray-500 mt-1">Evolução dos últimos 6 meses</p>
                 </div>
-                <div className="bg-blue-50 text-blue-600 rounded-full px-4 py-2 text-sm font-semibold">
-                  Tendência ↗
+                <div className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-full px-4 py-2">
+                  <ArrowUpRight className="w-4 h-4 text-blue-600" />
+                  <span className="text-sm font-semibold text-blue-600">Análise Mensal</span>
                 </div>
               </div>
 
-              <div className="h-80 flex items-end justify-around gap-4">
-                {agendamentosPorMes.map((item, index) => {
-                  const altura = (item.quantidade / maxValue) * 100
-                  const isHighest = item.quantidade === maxValue && maxValue > 0
-                  
-                  return (
-                    <div key={index} className="flex-1 flex flex-col items-center gap-3">
-                      {/* Valor */}
-                      <div className={`text-sm font-bold transition-all ${
-                        item.quantidade > 0 ? 'text-blue-600' : 'text-gray-400'
-                      }`}>
-                        {item.quantidade}
-                      </div>
-                      
-                      {/* Barra */}
-                      <div className="w-full bg-gray-100 rounded-t-lg relative overflow-hidden group cursor-pointer" 
-                           style={{ height: '240px' }}>
-                        <div 
-                          className={`absolute bottom-0 w-full rounded-t-lg transition-all duration-500 ${
-                            isHighest 
-                              ? 'bg-gradient-to-t from-blue-600 to-blue-400' 
-                              : 'bg-gradient-to-t from-blue-500 to-blue-300'
-                          } group-hover:from-blue-700 group-hover:to-blue-500`}
-                          style={{ height: `${altura}%` }}
-                        >
-                          {/* Efeito de brilho */}
-                          <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"></div>
-                        </div>
-                      </div>
-                      
-                      {/* Mês */}
-                      <div className="text-sm font-medium text-gray-600">
-                        {item.mes}
-                      </div>
-                    </div>
-                  )
-                })}
+              <div className="h-96">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={agendamentosPorMes} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorAgendamentos" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis 
+                      dataKey="mes" 
+                      tick={{ fill: '#6b7280', fontSize: 12, fontWeight: 500 }}
+                      axisLine={{ stroke: '#e5e7eb' }}
+                    />
+                    <YAxis 
+                      tick={{ fill: '#6b7280', fontSize: 12 }}
+                      axisLine={{ stroke: '#e5e7eb' }}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'white', 
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                      }}
+                      labelStyle={{ color: '#374151', fontWeight: 600 }}
+                      itemStyle={{ color: '#3b82f6', fontWeight: 500 }}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="quantidade" 
+                      stroke="#3b82f6" 
+                      strokeWidth={3}
+                      fillOpacity={1} 
+                      fill="url(#colorAgendamentos)"
+                      dot={{ fill: '#3b82f6', strokeWidth: 2, r: 5 }}
+                      activeDot={{ r: 7, stroke: '#3b82f6', strokeWidth: 2 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
 
-              {/* Legenda */}
-              <div className="mt-8 pt-6 border-t border-gray-100 flex items-center justify-center gap-8">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-gradient-to-br from-blue-500 to-blue-300"></div>
-                  <span className="text-sm text-gray-600">Agendamentos</span>
+              {/* Estatísticas adicionais */}
+              <div className="mt-8 pt-6 border-t border-gray-100 grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{stats.totalAgendamentos}</div>
+                  <div className="text-xs text-gray-500 mt-1">Total geral</div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-gradient-to-br from-blue-600 to-blue-400"></div>
-                  <span className="text-sm text-gray-600">Pico</span>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-500">{stats.agendamentosHoje}</div>
+                  <div className="text-xs text-gray-500 mt-1">Hoje</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-cyan-500">{stats.totalClientes}</div>
+                  <div className="text-xs text-gray-500 mt-1">Clientes</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-red-500">{stats.cancelados}</div>
+                  <div className="text-xs text-gray-500 mt-1">Cancelados</div>
                 </div>
               </div>
             </div>

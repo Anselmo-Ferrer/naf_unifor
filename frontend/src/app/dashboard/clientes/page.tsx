@@ -4,7 +4,10 @@ import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { listarUsuarios, listarAgendamentos, deletarUsuario, Usuario, Agendamento } from '@/lib/api'
 import { getUser, isAuthenticated, isAdmin, removeUser } from '@/lib/auth'
-import { Trash } from 'lucide-react'
+import { Trash, Users, XCircle } from 'lucide-react'
+import Modal from '@/components/Modal'
+import Toaster from '@/components/Toaster'
+import { toast } from 'sonner'
 
 interface ClienteComContagem extends Usuario {
   agendamentos: number
@@ -19,6 +22,9 @@ export default function Clientes() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [mounted, setMounted] = useState(false)
+  const [modalAberto, setModalAberto] = useState(false)
+  const [clienteParaExcluir, setClienteParaExcluir] = useState<ClienteComContagem | null>(null)
+  const [excluindoId, setExcluindoId] = useState<number | null>(null)
   const itensPorPagina = 5
 
   useEffect(() => {
@@ -31,8 +37,12 @@ export default function Clientes() {
     }
 
     if (!isAdmin()) {
-      alert('Acesso negado. Apenas administradores podem acessar esta página.')
-      router.push('/agendamentos')
+      toast.error('Acesso negado', {
+        description: 'Apenas administradores podem acessar esta página.'
+      })
+      setTimeout(() => {
+        router.push('/agendamentos')
+      }, 1500)
       return
     }
 
@@ -87,19 +97,41 @@ export default function Clientes() {
     }
   }
 
-  const excluirCliente = async (cliente: ClienteComContagem) => {
-    if (!confirm(`Deseja realmente excluir o cliente ${cliente.nome}?`)) {
-      return
-    }
+  const abrirModalExclusao = (cliente: ClienteComContagem) => {
+    setClienteParaExcluir(cliente)
+    setModalAberto(true)
+  }
+
+  const fecharModal = () => {
+    setModalAberto(false)
+    setClienteParaExcluir(null)
+  }
+
+  const excluirCliente = async () => {
+    if (!clienteParaExcluir) return
 
     try {
-      await deletarUsuario(cliente.id)
-      alert('Cliente excluído com sucesso!')
+      setExcluindoId(clienteParaExcluir.id)
+      setError('')
+      
+      await deletarUsuario(clienteParaExcluir.id)
+      
+      fecharModal()
+      
+      toast.success('Cliente excluído com sucesso!', {
+        description: `O cliente "${clienteParaExcluir.nome}" foi removido do sistema.`
+      })
       
       // Recarregar dados
       await carregarDados()
     } catch (err: any) {
-      alert(err.message || 'Erro ao excluir cliente.')
+      const mensagemErro = err.message || 'Erro ao excluir cliente.'
+      setError(mensagemErro)
+      toast.error('Erro ao excluir cliente', {
+        description: mensagemErro
+      })
+    } finally {
+      setExcluindoId(null)
     }
   }
 
@@ -128,7 +160,38 @@ export default function Clientes() {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* SIDEBAR */}
+      <Toaster />
+      
+      {/* Modal de Confirmação */}
+      <Modal
+        isOpen={modalAberto}
+        onClose={fecharModal}
+        title="Excluir Cliente"
+        description="Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita e todos os dados relacionados serão removidos."
+        icon={<XCircle size={32} className="text-red-600" />}
+        iconBgColor="bg-red-100"
+        onConfirm={excluirCliente}
+        confirmText="Excluir"
+        confirmColor="red"
+        isLoading={excluindoId !== null}
+      >
+        {clienteParaExcluir && (
+          <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-500">Nome:</span>
+              <span className="text-sm font-medium text-gray-800">{clienteParaExcluir.nome}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-500">Email:</span>
+              <span className="text-sm font-medium text-gray-800">{clienteParaExcluir.email}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-500">Agendamentos:</span>
+              <span className="text-sm font-medium text-gray-800">{clienteParaExcluir.agendamentos}</span>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* CONTEÚDO PRINCIPAL */}
       <div className="flex-1 p-10 overflow-y-auto">
@@ -166,81 +229,95 @@ export default function Clientes() {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse bg-white rounded-xl overflow-hidden shadow-sm">
-                <thead>
-                  <tr className="bg-blue-50">
-                    <th className="p-3.5 text-left font-semibold text-gray-600">Nome</th>
-                    <th className="p-3.5 text-left font-semibold text-gray-600">Telefone</th>
-                    <th className="p-3.5 text-left font-semibold text-gray-600">CPF</th>
-                    <th className="p-3.5 text-left font-semibold text-gray-600">Agendamentos</th>
-                    <th className="p-3.5 text-left font-semibold text-gray-600">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {clientesPagina.length > 0 ? (
-                    clientesPagina.map((cliente) => (
-                      <tr key={cliente.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                        <td className="p-3.5 text-gray-800">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-9 h-9 bg-gradient-to-br from-blue-400 to-cyan-400 rounded-full flex items-center justify-center text-white font-semibold">
-                              {cliente.nome.charAt(0).toUpperCase()}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="p-4 text-left font-medium text-gray-700">Cliente</th>
+                      <th className="p-4 text-left font-medium text-gray-700">Telefone</th>
+                      <th className="p-4 text-left font-medium text-gray-700">CPF</th>
+                      <th className="p-4 text-left font-medium text-gray-700">Agendamentos</th>
+                      <th className="p-4 text-center font-medium text-gray-700">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {clientesPagina.length > 0 ? (
+                      clientesPagina.map((cliente, index) => (
+                        <tr 
+                          key={cliente.id} 
+                          className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
+                            index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
+                          }`}
+                        >
+                          <td className="p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-semibold text-sm">
+                                {cliente.nome.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <div className="font-medium text-gray-900">{cliente.nome}</div>
+                                <div className="text-sm text-gray-500 mt-0.5">{cliente.email}</div>
+                              </div>
                             </div>
-                            <div>
-                              <strong>{cliente.nome}</strong>
-                              <br />
-                              <small className="text-gray-500">{cliente.email}</small>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="p-3.5 text-gray-800">{cliente.telefone}</td>
-                        <td className="p-3.5 text-gray-800">{cliente.cpf}</td>
-                        <td className="p-3.5 text-gray-800">
-                          <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold">
+                          </td>
+                          <td className="p-4 text-gray-700">{cliente.telefone}</td>
+                          <td className="p-4 text-gray-700 font-mono text-sm">{cliente.cpf}</td>
+                          <td className="p-4 text-gray-700 font-medium">
                             {cliente.agendamentos}
-                          </span>
-                        </td>
-                        <td className="p-3.5">
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => excluirCliente(cliente)}
-                              className="border-none bg-transparent cursor-pointer text-lg transition-transform hover:scale-110"
-                              title="Excluir cliente"
-                            >
-                              <Trash color='#044CF4' size={20}/>
-                            </button>
+                          </td>
+                          <td className="p-4">
+                            <div className="flex justify-center">
+                              <button
+                                onClick={() => abrirModalExclusao(cliente)}
+                                disabled={excluindoId === cliente.id}
+                                className="w-8 h-8 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Excluir cliente"
+                              >
+                                <Trash size={16}/>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="p-12 text-center">
+                          <div className="flex flex-col items-center justify-center">
+                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                              <Users className="w-8 h-8 text-gray-400"/>
+                            </div>
+                            <p className="text-gray-500 font-medium">
+                              {termoPesquisa ? 'Nenhum cliente encontrado com este termo de pesquisa.' : 'Nenhum cliente cadastrado.'}
+                            </p>
                           </div>
                         </td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={5} className="p-10 text-center text-gray-500">
-                        {termoPesquisa ? 'Nenhum cliente encontrado com este termo de pesquisa.' : 'Nenhum cliente cadastrado.'}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             {totalPaginas > 1 && (
-              <div className="mt-5 flex justify-center items-center gap-3">
+              <div className="mt-6 flex justify-center items-center gap-3">
                 <button
                   onClick={paginaAnterior}
                   disabled={paginaAtual === 1}
-                  className="bg-blue-600 text-white border-none rounded-md py-1.5 px-3 cursor-pointer disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-blue-700 transition-colors"
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 text-white border-none rounded-xl py-2.5 px-5 cursor-pointer disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg font-semibold disabled:shadow-none"
                 >
-                  ◀
+                  ◀ Anterior
                 </button>
-                <span className="text-gray-700">
-                  Página {paginaAtual} de {totalPaginas}
-                </span>
+                <div className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 shadow-sm">
+                  <span className="text-gray-700 font-medium">
+                    Página <span className="text-blue-600 font-bold">{paginaAtual}</span> de <span className="text-blue-600 font-bold">{totalPaginas}</span>
+                  </span>
+                </div>
                 <button
                   onClick={proximaPagina}
                   disabled={paginaAtual >= totalPaginas}
-                  className="bg-blue-600 text-white border-none rounded-md py-1.5 px-3 cursor-pointer disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-blue-700 transition-colors"
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 text-white border-none rounded-xl py-2.5 px-5 cursor-pointer disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg font-semibold disabled:shadow-none"
                 >
-                  ▶
+                  Próxima ▶
                 </button>
               </div>
             )}

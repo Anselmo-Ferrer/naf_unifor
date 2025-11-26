@@ -302,96 +302,121 @@ export default function AgendamentosAdmin() {
             </p>
           </div>
         ) : (
-          <div className="space-y-5">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {agendamentosFiltrados.map((agendamento) => (
               <div
                 key={agendamento.id}
-                className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow border border-gray-100"
+                className="bg-white rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-blue-200 group"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h2 className="text-lg font-bold text-gray-800">
-                        {agendamento.servico.nome}
-                      </h2>
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
-                          agendamento.status
-                        )}`}
-                      >
-                        {getStatusLabel(agendamento.status)}
-                      </span>
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h2 className="text-xl font-bold text-gray-800 mb-1 group-hover:text-blue-600 transition-colors">
+                          {agendamento.servico.nome}
+                        </h2>
+                        <span
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
+                            agendamento.status
+                          )}`}
+                        >
+                          {getStatusLabel(agendamento.status)}
+                        </span>
+                      </div>
                     </div>
                     
-                    <p className="text-gray-600 text-sm mb-3">
-                      {agendamento.servico.descricao}
-                    </p>
-
-                    {agendamento.observacoes && (
-                      <p className="text-gray-500 text-sm italic mb-3 flex items-center gap-1">
-                        <BookOpen size={18} color='#044CF4'/> {agendamento.observacoes}
+                    {agendamento.servico.descricao && (
+                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                        {agendamento.servico.descricao}
                       </p>
                     )}
 
-                    <div className="flex flex-wrap items-center gap-5 text-gray-600 text-sm">
-                      <div className="flex items-center gap-2">
-                        <User size={18} color='#044CF4'/>
-                        <span className="font-medium">{agendamento.usuario.nome}</span>
+                    {agendamento.observacoes && (
+                      <div className="bg-blue-50 border-l-4 border-blue-500 rounded-r-lg p-3 mb-4">
+                        <p className="text-gray-700 text-sm flex items-start gap-2">
+                          <BookOpen size={16} className="text-blue-500 mt-0.5 flex-shrink-0"/> 
+                          <span>{agendamento.observacoes}</span>
+                        </p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Calendar size={18} color='#044CF4'/>
-                        <span>{formatarData(agendamento.data)}</span>
+                    )}
+
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                          <User size={16} className="text-blue-600"/>
+                        </div>
+                        <span className="font-medium text-sm">{agendamento.usuario.nome}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Clock size={18} color='#044CF4'/>
-                        <span>{agendamento.horario}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Timer size={18} color='#044CF4'/>
-                        <span>{agendamento.servico.duracao_minutos} min</span>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                            <Calendar size={14} className="text-gray-600"/>
+                          </div>
+                          <span className="text-sm">{formatarData(agendamento.data)}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                            <Clock size={14} className="text-gray-600"/>
+                          </div>
+                          <span className="text-sm">{agendamento.horario}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                            <Timer size={14} className="text-gray-600"/>
+                          </div>
+                          <span className="text-sm">{agendamento.servico.duracao_minutos} min</span>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="mt-3 text-xs text-gray-500 flex items-center gap-1">
-                      <Mail size={18} color='#044CF4'/> {agendamento.usuario.email}  <Phone size={18} color='#044CF4'/> {agendamento.usuario.telefone}
+                    <div className="pt-4 border-t border-gray-100 space-y-1.5">
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <Mail size={14} className="text-gray-400"/>
+                        <span className="truncate">{agendamento.usuario.email}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <Phone size={14} className="text-gray-400"/>
+                        <span>{agendamento.usuario.telefone}</span>
+                      </div>
                     </div>
                   </div>
-
-                  {podeAtualizar(agendamento.status) && (
-                    <div className="flex gap-2 ml-4">
-                      <button
-                        onClick={() => abrirModal(
-                          agendamento.id, 
-                          'concluido', 
-                          'concluir',
-                          agendamento.servico.nome,
-                          agendamento.usuario.nome
-                        )}
-                        disabled={atualizandoId === agendamento.id}
-                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
-                        title="Marcar como concluído"
-                      >
-                        <CheckCircle size={18} />
-                        Concluir
-                      </button>
-                      <button
-                        onClick={() => abrirModal(
-                          agendamento.id, 
-                          'cancelado', 
-                          'cancelar',
-                          agendamento.servico.nome,
-                          agendamento.usuario.nome
-                        )}
-                        disabled={atualizandoId === agendamento.id}
-                        className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
-                        title="Cancelar agendamento"
-                      >
-                        <XCircle size={18} />
-                        Cancelar
-                      </button>
-                    </div>
-                  )}
                 </div>
+
+                {podeAtualizar(agendamento.status) && (
+                  <div className="flex gap-2 mt-5 pt-5 border-t border-gray-100">
+                    <button
+                      onClick={() => abrirModal(
+                        agendamento.id, 
+                        'concluido', 
+                        'concluir',
+                        agendamento.servico.nome,
+                        agendamento.usuario.nome
+                      )}
+                      disabled={atualizandoId === agendamento.id}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold shadow-sm hover:shadow-md"
+                      title="Marcar como concluído"
+                    >
+                      <CheckCircle size={18} />
+                      Concluir
+                    </button>
+                    <button
+                      onClick={() => abrirModal(
+                        agendamento.id, 
+                        'cancelado', 
+                        'cancelar',
+                        agendamento.servico.nome,
+                        agendamento.usuario.nome
+                      )}
+                      disabled={atualizandoId === agendamento.id}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl hover:from-red-700 hover:to-red-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold shadow-sm hover:shadow-md"
+                      title="Cancelar agendamento"
+                    >
+                      <XCircle size={18} />
+                      Cancelar
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

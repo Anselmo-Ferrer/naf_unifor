@@ -40,9 +40,14 @@ export default function Agendamentos() {
       const todosAgendamentos = await listarAgendamentos()
       
       // Filtrar apenas os agendamentos do usuário logado
-      const agendamentosDoUsuario = todosAgendamentos.filter(
-        ag => ag.usuario.id === usuarioId
-      )
+      const agendamentosDoUsuario = todosAgendamentos
+        .filter(ag => ag.usuario.id === usuarioId)
+        .sort((a, b) => {
+          const dataA = new Date(a.data).getTime()
+          const dataB = new Date(b.data).getTime()
+          if (dataA !== dataB) return dataB - dataA
+          return b.horario.localeCompare(a.horario)
+        })
       
       setAgendamentos(agendamentosDoUsuario)
     } catch (err: any) {
@@ -70,6 +75,7 @@ export default function Agendamentos() {
   const getStatusColor = (status: string): string => {
     const statusLower = status.toLowerCase()
     if (statusLower === 'confirmado') return 'bg-green-50 text-green-600'
+    if (statusLower === 'concluido' || statusLower === 'concluído') return 'bg-emerald-50 text-emerald-600'
     if (statusLower === 'cancelado') return 'bg-red-50 text-red-600'
     return 'bg-blue-50 text-blue-600' // pendente
   }
@@ -77,6 +83,7 @@ export default function Agendamentos() {
   const getStatusLabel = (status: string): string => {
     const statusLower = status.toLowerCase()
     if (statusLower === 'confirmado') return 'Confirmado'
+    if (statusLower === 'concluido' || statusLower === 'concluído') return 'Concluído'
     if (statusLower === 'cancelado') return 'Cancelado'
     return 'Pendente'
   }
@@ -96,31 +103,40 @@ export default function Agendamentos() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* HEADER */}
-      <header className="flex justify-between items-center px-12 py-4 border-b border-gray-200 bg-white">
-        <Link href='/' className="text-xl font-bold text-blue-600">NAF Unifor</Link>
-        <div className="flex items-center gap-4 text-[0.95rem]">
-          <button
-            onClick={() => router.push('/agendamentos')}
-            className="text-blue-600 hover:text-blue-800 cursor-pointer"
-          >
-            Meus agendamentos
-          </button>
-          {usuario && (
-            <span className="text-gray-700">
-              <span className="font-semibold">{usuario.nome.split(' ')[0]}</span>
-            </span>
-          )}
-          {usuario && (
-            <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700">
-              <span className="font-semibold">{usuario.nome.slice(0,1).toUpperCase()}</span>
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12">
+          <div className="flex justify-between items-center py-4">
+            <Link href='/' className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent hover:from-blue-700 hover:to-blue-800 transition-all">
+              NAF Unifor
+            </Link>
+            <div className="flex items-center gap-6">
+              <button
+                onClick={() => router.push('/agendamentos')}
+                className="text-gray-700 hover:text-blue-600 font-medium transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-blue-600 after:scale-x-0 hover:after:scale-x-100 after:transition-transform"
+              >
+                Meus agendamentos
+              </button>
+              
+              {usuario && (
+                <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
+                  <div className="text-right hidden sm:block">
+                    <div className="text-sm font-semibold text-gray-800">{usuario.nome.split(' ')[0]}</div>
+                    <div className="text-xs text-gray-500">{usuario.email}</div>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold shadow-md hover:shadow-lg transition-shadow cursor-pointer">
+                    <span>{usuario.nome.slice(0,1).toUpperCase()}</span>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className='flex items-center justify-center w-10 h-10 rounded-full bg-red-50 hover:bg-red-100 text-red-600 transition-all hover:scale-110 shadow-sm hover:shadow-md'
+                    title="Sair"
+                  >
+                    <LogOut size={18}/>
+                  </button>
+                </div>
+              )}
             </div>
-          )}
-          <button
-            onClick={handleLogout}
-            className='flex items-center justify-center w-9 h-9 rounded-full bg-blue-100 hover:bg-blue-300 cursor-pointer'
-          >
-            <LogOut color='#044CF4' size={16}/>
-          </button>
+          </div>
         </div>
       </header>
 
@@ -168,36 +184,60 @@ export default function Agendamentos() {
               </button>
             </div>
           ) : (
-            agendamentos.map((ag) => (
-              <div
-                key={ag.id}
-                className="bg-white rounded-xl p-6 mb-4 flex flex-col gap-2.5 relative shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div className={`absolute top-5 right-5 ${getStatusColor(ag.status)} rounded-full py-1 px-3 text-sm font-medium`}>
-                  {getStatusLabel(ag.status)}
-                </div>
-                
-                <div className="font-semibold text-lg text-gray-900">
-                  {ag.servico.nome}
-                </div>
-                
-                <div className="text-gray-600 text-[0.95rem] mb-2.5">
-                  {ag.servico.descricao}
-                </div>
-
-                {ag.observacoes && (
-                  <div className="text-gray-500 text-sm italic mb-2 flex items-center gap-1">
-                    <NotebookPenIcon size={18} color='#044CF4'/> {ag.observacoes}
+            <div className="space-y-6">
+              {agendamentos.map((ag) => (
+                <div
+                  key={ag.id}
+                  className="bg-white rounded-2xl p-6 flex flex-col gap-4 relative shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-blue-200 group w-full"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="font-bold text-xl text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                        {ag.servico.nome}
+                      </h3>
+                      {ag.servico.descricao && (
+                        <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                          {ag.servico.descricao}
+                        </p>
+                      )}
+                    </div>
+                    <span className={`${getStatusColor(ag.status)} rounded-full py-1.5 px-4 text-xs font-semibold whitespace-nowrap ml-3`}>
+                      {getStatusLabel(ag.status)}
+                    </span>
                   </div>
-                )}
-                
-                <div className="flex items-center gap-4 text-gray-800 text-sm">
-                  <span className='flex items-center gap-1'><Calendar size={18} color='#044CF4'/> {formatarData(ag.data)}</span>
-                  <span className='flex items-center gap-1'><Clock size={18} color='#044CF4'/> {ag.horario}</span>
-                  <span className='flex items-center gap-1'><TimerIcon size={18} color='#044CF4'/>{ag.servico.duracao_minutos} min</span>
+
+                  {ag.observacoes && (
+                    <div className="bg-blue-50 border-l-4 border-blue-500 rounded-r-lg p-3">
+                      <p className="text-gray-700 text-sm flex items-start gap-2">
+                        <NotebookPenIcon size={16} className="text-blue-500 mt-0.5 flex-shrink-0"/> 
+                        <span>{ag.observacoes}</span>
+                      </p>
+                    </div>
+                  )}
+                  
+                  <div className="pt-4 border-t border-gray-100 space-y-2.5">
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                        <Calendar size={16} className="text-blue-600"/>
+                      </div>
+                      <span className="text-sm font-medium">{formatarData(ag.data)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                        <Clock size={16} className="text-gray-600"/>
+                      </div>
+                      <span className="text-sm font-medium">{ag.horario}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                        <TimerIcon size={16} className="text-gray-600"/>
+                      </div>
+                      <span className="text-sm font-medium">{ag.servico.duracao_minutos} minutos</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
       </div>
