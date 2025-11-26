@@ -33,7 +33,7 @@ model Agendamento {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
-  usuario     Usuario    @relation(fields: [usuarioId], references: [id])
+  usuario     Usuario    @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   servico     Servico    @relation(fields: [servicoId], references: [id])
 }
 
