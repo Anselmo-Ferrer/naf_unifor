@@ -73,9 +73,11 @@ export default function Dashboard() {
       const cancelados = agendamentos.filter(ag => ag.status.toLowerCase() === 'cancelado').length
       
       const agendamentosHoje = agendamentos.filter(ag => {
-        const dataAg = new Date(ag.data)
-        dataAg.setHours(0, 0, 0, 0)
-        return dataAg.getTime() === hoje.getTime()
+        // Normalizar data do agendamento para comparação local
+        const dataAg = typeof ag.data === 'string' ? new Date(ag.data) : ag.data
+        const dataAgNormalizada = new Date(dataAg.getFullYear(), dataAg.getMonth(), dataAg.getDate())
+        dataAgNormalizada.setHours(0, 0, 0, 0)
+        return dataAgNormalizada.getTime() === hoje.getTime()
       }).length
 
       const clientesUsuarios = usuarios.filter(u => u.role === 'user').length
@@ -112,9 +114,11 @@ export default function Dashboard() {
       const mesNome = meses[data.getMonth()]
       
       const quantidade = agendamentos.filter(ag => {
-        const dataAg = new Date(ag.data)
-        return dataAg.getMonth() === data.getMonth() && 
-               dataAg.getFullYear() === data.getFullYear()
+        // Normalizar data do agendamento para comparação local
+        const dataAg = typeof ag.data === 'string' ? new Date(ag.data) : ag.data
+        const dataAgNormalizada = new Date(dataAg.getFullYear(), dataAg.getMonth(), dataAg.getDate())
+        return dataAgNormalizada.getMonth() === data.getMonth() && 
+               dataAgNormalizada.getFullYear() === data.getFullYear()
       }).length
 
       resultado.push({ mes: mesNome, quantidade })
