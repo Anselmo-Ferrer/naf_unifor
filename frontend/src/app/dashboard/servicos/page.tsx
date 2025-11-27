@@ -189,7 +189,7 @@ export default function ServicosAdmin() {
               type="text"
               value={formData.nome}
               onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+              className="text-black w-full p-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
               placeholder="Ex: Declaração de IRPF"
               required
             />
@@ -201,7 +201,7 @@ export default function ServicosAdmin() {
               value={formData.descricao}
               onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
               rows={3}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+              className="text-black w-full p-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
               placeholder="Descreva o serviço oferecido..."
               required
             />
@@ -213,7 +213,7 @@ export default function ServicosAdmin() {
               type="number"
               value={formData.duracao_minutos}
               onChange={(e) => setFormData({ ...formData, duracao_minutos: e.target.value })}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+              className="text-black w-full p-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
               placeholder="30"
               min="1"
               required
