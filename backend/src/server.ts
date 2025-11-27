@@ -7,7 +7,29 @@ import authRoutes from "./routes/authRoutes"
 
 const app = express()
 
-app.use(cors())
+// Configurar CORS para aceitar requisições da Vercel e localhost
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'http://localhost:3001',
+  'http://localhost:3000',
+].filter(Boolean) as string[]
+
+const corsOptions = {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    // Permitir requisições sem origin (ex: Postman, mobile apps)
+    if (!origin) return callback(null, true)
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  },
+  credentials: true,
+  optionsSuccessStatus: 200
+}
+
+app.use(cors(corsOptions))
 app.use(express.json())
 
 app.use("/auth", authRoutes)
