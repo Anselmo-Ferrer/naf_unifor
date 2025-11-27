@@ -480,15 +480,6 @@ export default function Agendamentos() {
 
                   {(podeCancelar(ag.status) || podeEditar(ag.status)) && (
                     <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
-                      {podeEditar(ag.status) && (
-                        <button
-                          onClick={() => abrirModalEditar(ag)}
-                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-200 text-sm font-semibold shadow-sm hover:shadow-md"
-                        >
-                          <Edit size={18} />
-                          Editar
-                        </button>
-                      )}
                       {podeCancelar(ag.status) && (
                         <button
                           onClick={() => abrirModalCancelar(ag)}
