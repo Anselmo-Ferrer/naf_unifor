@@ -37,7 +37,7 @@ app.use("/usuarios", usuarioRoutes)
 app.use("/servicos", servicoRoutes)
 app.use("/agendamentos", agendamentoRoutes)
 
-app.get("/", (_req, res) => {
+app.get("/", (_req: express.Request, res: express.Response) => {
   res.send("API do sistema de agendamento funcionando")
 })
 
