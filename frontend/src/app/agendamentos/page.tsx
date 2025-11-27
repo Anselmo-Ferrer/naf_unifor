@@ -2,10 +2,13 @@
 
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { listarAgendamentos, Agendamento } from '@/lib/api'
+import { listarAgendamentos, Agendamento, cancelarAgendamento, atualizarAgendamento, listarServicos, Servico } from '@/lib/api'
 import { getUser, isAuthenticated, removeUser } from '@/lib/auth'
-import { Calendar, Clock, LogOut, NotebookPenIcon, Plus, TimerIcon } from 'lucide-react'
+import { Calendar, Clock, LogOut, NotebookPenIcon, Plus, TimerIcon, XCircle, Edit } from 'lucide-react'
 import Link from 'next/link'
+import { toast } from 'sonner'
+import Toaster from '@/components/Toaster'
+import Modal from '@/components/Modal'
 
 export default function Agendamentos() {
   const router = useRouter()
@@ -14,6 +17,17 @@ export default function Agendamentos() {
   const [error, setError] = useState('')
   const [usuario, setUsuario] = useState<any>(null)
   const [mounted, setMounted] = useState(false)
+  const [modalCancelar, setModalCancelar] = useState(false)
+  const [modalEditar, setModalEditar] = useState(false)
+  const [agendamentoSelecionado, setAgendamentoSelecionado] = useState<Agendamento | null>(null)
+  const [servicos, setServicos] = useState<Servico[]>([])
+  const [formEdicao, setFormEdicao] = useState({
+    data: '',
+    horario: '',
+    servicoId: '',
+    observacoes: ''
+  })
+  const [processando, setProcessando] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -29,8 +43,18 @@ export default function Agendamentos() {
     
     if (user) {
       carregarAgendamentos(user.id)
+      carregarServicos()
     }
   }, [router])
+
+  const carregarServicos = async () => {
+    try {
+      const data = await listarServicos()
+      setServicos(data.filter(s => s.ativo))
+    } catch (err) {
+      console.error('Erro ao carregar serviços:', err)
+    }
+  }
 
   const carregarAgendamentos = async (usuarioId: number) => {
     try {
@@ -95,6 +119,99 @@ export default function Agendamentos() {
     }
   }
 
+  const podeCancelar = (status: string) => {
+    const statusLower = status.toLowerCase()
+    return statusLower !== 'cancelado' && statusLower !== 'concluido' && statusLower !== 'concluído'
+  }
+
+  const podeEditar = (status: string) => {
+    const statusLower = status.toLowerCase()
+    return statusLower !== 'cancelado' && statusLower !== 'concluido' && statusLower !== 'concluído'
+  }
+
+  const abrirModalCancelar = (agendamento: Agendamento) => {
+    setAgendamentoSelecionado(agendamento)
+    setModalCancelar(true)
+  }
+
+  const abrirModalEditar = (agendamento: Agendamento) => {
+    setAgendamentoSelecionado(agendamento)
+    setFormEdicao({
+      data: new Date(agendamento.data).toISOString().split('T')[0],
+      horario: agendamento.horario,
+      servicoId: agendamento.servico.id.toString(),
+      observacoes: agendamento.observacoes || ''
+    })
+    setModalEditar(true)
+  }
+
+  const fecharModais = () => {
+    setModalCancelar(false)
+    setModalEditar(false)
+    setAgendamentoSelecionado(null)
+  }
+
+  const confirmarCancelar = async () => {
+    if (!agendamentoSelecionado) return
+
+    try {
+      setProcessando(true)
+      await cancelarAgendamento(agendamentoSelecionado.id)
+      
+      setAgendamentos(prev => 
+        prev.map(ag => 
+          ag.id === agendamentoSelecionado.id 
+            ? { ...ag, status: 'cancelado' } 
+            : ag
+        )
+      )
+      
+      toast.success('Agendamento cancelado!', {
+        description: 'Seu agendamento foi cancelado com sucesso.'
+      })
+      
+      fecharModais()
+    } catch (err: any) {
+      toast.error('Erro ao cancelar agendamento', {
+        description: err.message || 'Tente novamente mais tarde.'
+      })
+    } finally {
+      setProcessando(false)
+    }
+  }
+
+  const confirmarEditar = async () => {
+    if (!agendamentoSelecionado) return
+
+    try {
+      setProcessando(true)
+      
+      await atualizarAgendamento(agendamentoSelecionado.id, {
+        data: formEdicao.data,
+        horario: formEdicao.horario,
+        servicoId: parseInt(formEdicao.servicoId),
+        observacoes: formEdicao.observacoes
+      })
+      
+      // Recarregar agendamentos
+      if (usuario) {
+        await carregarAgendamentos(usuario.id)
+      }
+      
+      toast.success('Agendamento atualizado!', {
+        description: 'Seu agendamento foi atualizado com sucesso.'
+      })
+      
+      fecharModais()
+    } catch (err: any) {
+      toast.error('Erro ao atualizar agendamento', {
+        description: err.message || 'Tente novamente mais tarde.'
+      })
+    } finally {
+      setProcessando(false)
+    }
+  }
+
   // Prevenir hidratação SSR até o componente montar
   if (!mounted) {
     return null
@@ -102,6 +219,131 @@ export default function Agendamentos() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Toaster />
+      
+      {/* Modal Cancelar */}
+      <Modal
+        isOpen={modalCancelar}
+        onClose={fecharModais}
+        title="Cancelar Agendamento"
+        description="Tem certeza que deseja cancelar este agendamento? Esta ação não pode ser desfeita."
+        icon={<XCircle size={32} className="text-red-600" />}
+        iconBgColor="bg-red-100"
+        onConfirm={confirmarCancelar}
+        confirmText="Cancelar Agendamento"
+        confirmColor="red"
+        isLoading={processando}
+      >
+        {agendamentoSelecionado && (
+          <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-500">Serviço:</span>
+              <span className="text-sm font-medium text-gray-800">{agendamentoSelecionado.servico.nome}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-500">Data:</span>
+              <span className="text-sm font-medium text-gray-800">{formatarData(agendamentoSelecionado.data)}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-500">Horário:</span>
+              <span className="text-sm font-medium text-gray-800">{agendamentoSelecionado.horario}</span>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Modal Editar */}
+      <Modal
+        isOpen={modalEditar}
+        onClose={fecharModais}
+        title="Editar Agendamento"
+        description="Altere os dados do seu agendamento."
+        showActions={false}
+      >
+        {agendamentoSelecionado && (
+          <form onSubmit={(e) => { e.preventDefault(); confirmarEditar(); }} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Serviço</label>
+              <select
+                value={formEdicao.servicoId}
+                onChange={(e) => setFormEdicao({ ...formEdicao, servicoId: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+                required
+              >
+                <option value="">Selecione um serviço</option>
+                {servicos.map(servico => (
+                  <option key={servico.id} value={servico.id}>
+                    {servico.nome} ({servico.duracao_minutos} min)
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Data</label>
+              <input
+                type="date"
+                value={formEdicao.data}
+                onChange={(e) => setFormEdicao({ ...formEdicao, data: e.target.value })}
+                min={new Date().toISOString().split('T')[0]}
+                className="w-full p-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Horário</label>
+              <select
+                value={formEdicao.horario}
+                onChange={(e) => setFormEdicao({ ...formEdicao, horario: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+                required
+              >
+                <option value="">Selecione um horário</option>
+                {['08:00', '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'].map(horario => (
+                  <option key={horario} value={horario}>{horario}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Observações (opcional)</label>
+              <textarea
+                value={formEdicao.observacoes}
+                onChange={(e) => setFormEdicao({ ...formEdicao, observacoes: e.target.value })}
+                rows={3}
+                className="w-full p-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+                placeholder="Adicione observações sobre seu agendamento..."
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button
+                type="button"
+                onClick={fecharModais}
+                disabled={processando}
+                className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={processando}
+                className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {processando ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  'Salvar Alterações'
+                )}
+              </button>
+            </div>
+          </form>
+        )}
+      </Modal>
       {/* HEADER */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 lg:px-12">
@@ -235,6 +477,29 @@ export default function Agendamentos() {
                       <span className="text-sm font-medium">{ag.servico.duracao_minutos} minutos</span>
                     </div>
                   </div>
+
+                  {(podeCancelar(ag.status) || podeEditar(ag.status)) && (
+                    <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
+                      {podeEditar(ag.status) && (
+                        <button
+                          onClick={() => abrirModalEditar(ag)}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-200 text-sm font-semibold shadow-sm hover:shadow-md"
+                        >
+                          <Edit size={18} />
+                          Editar
+                        </button>
+                      )}
+                      {podeCancelar(ag.status) && (
+                        <button
+                          onClick={() => abrirModalCancelar(ag)}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all duration-200 text-sm font-semibold shadow-sm hover:shadow-md"
+                        >
+                          <XCircle size={18} />
+                          Cancelar
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

@@ -35,7 +35,7 @@ model Agendamento {
   updatedAt   DateTime   @updatedAt
 
   usuario     Usuario    @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  servico     Servico    @relation(fields: [servicoId], references: [id])
+  servico     Servico    @relation(fields: [servicoId], references: [id], onDelete: Cascade)
 }
 
 model Servico {

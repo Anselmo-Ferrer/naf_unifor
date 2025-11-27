@@ -32,12 +32,40 @@ export const atualizar = async (
     ativo: boolean
   }>
 ) => {
-  return await prisma.servico.update({
+  // Atualizar o serviço
+  const servicoAtualizado = await prisma.servico.update({
     where: { id },
     data,
   })
+
+  // Se o serviço foi desativado, cancelar todos os agendamentos futuros
+  if (data.ativo === false) {
+    const agora = new Date()
+    await prisma.agendamento.updateMany({
+      where: {
+        servicoId: id,
+        data: {
+          gte: agora
+        },
+        status: {
+          not: 'cancelado'
+        }
+      },
+      data: {
+        status: 'cancelado'
+      }
+    })
+  }
+
+  return servicoAtualizado
 }
 
 export const deletar = async (id: number) => {
+  // Primeiro, deletar todos os agendamentos relacionados
+  await prisma.agendamento.deleteMany({
+    where: { servicoId: id }
+  })
+  
+  // Depois, deletar o serviço
   return await prisma.servico.delete({ where: { id } })
 }

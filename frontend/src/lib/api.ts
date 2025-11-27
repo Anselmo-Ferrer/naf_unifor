@@ -177,7 +177,7 @@ export async function deletarUsuario(id: number): Promise<void> {
 }
 
 export const atualizarAgendamento = async (id: number, dados: Partial<{
-  data?: Date
+  data?: Date | string
   horario?: string
   status?: string
   observacoes?: string
@@ -195,6 +195,118 @@ export const atualizarAgendamento = async (id: number, dados: Partial<{
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.message || 'Erro ao atualizar agendamento')
+  }
+
+  return response.json()
+}
+
+// Cancelar agendamento
+export const cancelarAgendamento = async (id: number): Promise<Agendamento> => {
+  return atualizarAgendamento(id, { status: 'cancelado' })
+}
+
+// Deletar agendamento
+export const deletarAgendamento = async (id: number): Promise<void> => {
+  const response = await fetch(`${API_URL}/agendamentos/${id}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.message || 'Erro ao deletar agendamento')
+  }
+}
+
+// Buscar agendamento por ID
+export const buscarAgendamentoPorId = async (id: number): Promise<Agendamento> => {
+  const response = await fetch(`${API_URL}/agendamentos/${id}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.message || 'Erro ao buscar agendamento')
+  }
+
+  return response.json()
+}
+
+// CRUD de Serviços
+export const criarServico = async (data: {
+  nome: string
+  descricao: string
+  duracao_minutos: number
+  ativo?: boolean
+}): Promise<Servico> => {
+  const response = await fetch(`${API_URL}/servicos`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || 'Erro ao criar serviço')
+  }
+
+  return response.json()
+}
+
+export const atualizarServico = async (id: number, data: Partial<{
+  nome: string
+  descricao: string
+  duracao_minutos: number
+  ativo: boolean
+}>): Promise<Servico> => {
+  const response = await fetch(`${API_URL}/servicos/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || 'Erro ao atualizar serviço')
+  }
+
+  return response.json()
+}
+
+export const deletarServico = async (id: number): Promise<void> => {
+  const response = await fetch(`${API_URL}/servicos/${id}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || 'Erro ao deletar serviço')
+  }
+}
+
+export const buscarServicoPorId = async (id: number): Promise<Servico> => {
+  const response = await fetch(`${API_URL}/servicos/${id}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || 'Erro ao buscar serviço')
   }
 
   return response.json()

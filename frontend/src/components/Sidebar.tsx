@@ -1,7 +1,7 @@
 'use client'
 
 import { removeUser } from "@/lib/auth"
-import { Calendar, LayoutDashboard, LogOut, Users } from "lucide-react"
+import { Calendar, LayoutDashboard, LogOut, Users, Settings } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
 
 export default function SidebarDashboard() {
@@ -18,7 +18,8 @@ export default function SidebarDashboard() {
   const items = [
     { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20}/> },
     { path: '/dashboard/agendamentos', label: 'Agendamentos', icon: <Calendar size={20}/> },
-    { path: '/dashboard/clientes', label: 'Clientes', icon: <Users size={20}/> }
+    { path: '/dashboard/clientes', label: 'Clientes', icon: <Users size={20}/> },
+    { path: '/dashboard/servicos', label: 'Serviços', icon: <Settings size={20}/> }
   ]
 
   const isActive = (path: string) => {
