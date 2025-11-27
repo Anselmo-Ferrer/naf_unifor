@@ -144,7 +144,9 @@ export default function AgendamentosAdmin() {
   }
 
   const formatarData = (data: Date): string => {
-    const dataObj = new Date(data)
+    const dataStr = data.toString().split(' ')[0]
+    const [ano, mes, dia] = dataStr.split('-')
+    const dataObj = new Date(parseInt(ano), parseInt(mes) - 1, parseInt(dia))
     const opcoes: Intl.DateTimeFormatOptions = { 
       day: 'numeric', 
       month: 'long', 

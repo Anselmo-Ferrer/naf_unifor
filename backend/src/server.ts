@@ -7,7 +7,6 @@ import authRoutes from "./routes/authRoutes"
 
 const app = express()
 
-// Configurar CORS para aceitar requisições da Vercel e localhost
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   'http://localhost:3001',
