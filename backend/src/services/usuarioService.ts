@@ -1,4 +1,3 @@
-// src/services/usuarioService.ts
 import prisma from "../prismaClient"
 
 export const listar = async () => {

@@ -86,15 +86,17 @@ export default function Agendamentos() {
     router.push('/novo-agendamento')
   }
 
-  const formatarData = (data: Date): string => {
-    const dataObj = new Date(data)
-    const opcoes: Intl.DateTimeFormatOptions = { 
-      day: 'numeric', 
-      month: 'long', 
-      year: 'numeric' 
+    const formatarData = (data: Date): string => {
+      const dataStr = data.toString().split(' ')[0]
+      const [ano, mes, dia] = dataStr.split('-')
+      const dataObj = new Date(parseInt(ano), parseInt(mes) - 1, parseInt(dia))
+      const opcoes: Intl.DateTimeFormatOptions = { 
+        day: 'numeric', 
+        month: 'long', 
+        year: 'numeric' 
+      }
+      return dataObj.toLocaleDateString('pt-BR', opcoes)
     }
-    return dataObj.toLocaleDateString('pt-BR', opcoes)
-  }
 
   const getStatusColor = (status: string): string => {
     const statusLower = status.toLowerCase()
