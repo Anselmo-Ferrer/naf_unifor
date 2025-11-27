@@ -65,14 +65,9 @@ export default function AgendamentosAdmin() {
     }
 
     filtrados.sort((a, b) => {
-      // Normalizar datas para comparação
-      const dataA = typeof a.data === 'string' ? new Date(a.data) : a.data
-      const dataB = typeof b.data === 'string' ? new Date(b.data) : b.data
-      const dataANormalizada = new Date(dataA.getFullYear(), dataA.getMonth(), dataA.getDate())
-      const dataBNormalizada = new Date(dataB.getFullYear(), dataB.getMonth(), dataB.getDate())
-      const timeA = dataANormalizada.getTime()
-      const timeB = dataBNormalizada.getTime()
-      if (timeA !== timeB) return timeB - timeA
+      const dataA = new Date(a.data).getTime()
+      const dataB = new Date(b.data).getTime()
+      if (dataA !== dataB) return dataB - dataA
       return b.horario.localeCompare(a.horario)
     })
 
@@ -148,39 +143,14 @@ export default function AgendamentosAdmin() {
     }
   }
 
-  const formatarData = (data: Date | string): string => {
-    // Converter para Date se for string
-    let dataObj: Date
-    if (typeof data === 'string') {
-      // Se a string tem formato ISO (YYYY-MM-DD ou YYYY-MM-DDTHH:mm:ss)
-      if (data.includes('T')) {
-        // Extrair apenas a parte da data (antes do T)
-        const [datePart] = data.split('T')
-        const [ano, mes, dia] = datePart.split('-').map(Number)
-        dataObj = new Date(ano, mes - 1, dia)
-      } else {
-        // Formato YYYY-MM-DD
-        const [ano, mes, dia] = data.split('-').map(Number)
-        dataObj = new Date(ano, mes - 1, dia)
-      }
-    } else {
-      dataObj = data
-    }
-    
-    // Extrair componentes da data local (sem timezone)
-    const ano = dataObj.getFullYear()
-    const mes = dataObj.getMonth()
-    const dia = dataObj.getDate()
-    
-    // Criar nova data local para formatação
-    const dataLocal = new Date(ano, mes, dia)
-    
+  const formatarData = (data: Date): string => {
+    const dataObj = new Date(data)
     const opcoes: Intl.DateTimeFormatOptions = { 
       day: 'numeric', 
       month: 'long', 
       year: 'numeric' 
     }
-    return dataLocal.toLocaleDateString('pt-BR', opcoes)
+    return dataObj.toLocaleDateString('pt-BR', opcoes)
   }
 
   const getStatusColor = (status: string) => {

@@ -64,15 +64,6 @@ export default function NovoAgendamento() {
     carregarAgendamentos()
   }, [router])
 
-  // Função helper para normalizar data para comparação (YYYY-MM-DD)
-  const normalizarDataParaComparacao = (data: Date | string): string => {
-    const dataObj = typeof data === 'string' ? new Date(data) : data
-    const ano = dataObj.getFullYear()
-    const mes = String(dataObj.getMonth() + 1).padStart(2, '0')
-    const dia = String(dataObj.getDate()).padStart(2, '0')
-    return `${ano}-${mes}-${dia}`
-  }
-
   // Carregar agendamentos existentes
   const carregarAgendamentos = async () => {
     try {
@@ -217,7 +208,7 @@ export default function NovoAgendamento() {
     
     // Filtrar agendamentos da data selecionada que não estão cancelados
     const agendamentosNaData = agendamentosExistentes.filter(ag => {
-      const dataAgendamento = normalizarDataParaComparacao(ag.data)
+      const dataAgendamento = new Date(ag.data).toISOString().split('T')[0]
       return dataAgendamento === data && 
              ag.status.toLowerCase() !== 'cancelado' &&
              ag.status.toLowerCase() !== 'concluido' &&
@@ -237,7 +228,7 @@ export default function NovoAgendamento() {
       
       // Filtrar agendamentos da data selecionada que não estão cancelados
       const agendamentosNaData = agendamentosExistentes.filter(ag => {
-        const dataAgendamento = normalizarDataParaComparacao(ag.data)
+        const dataAgendamento = new Date(ag.data).toISOString().split('T')[0]
         return dataAgendamento === formData.data && 
                ag.status.toLowerCase() !== 'cancelado' &&
                ag.status.toLowerCase() !== 'concluido' &&
@@ -453,7 +444,7 @@ export default function NovoAgendamento() {
                     return <div key={index} className="h-10" />
                   }
                   
-                  const dataStr = normalizarDataParaComparacao(item.data)
+                  const dataStr = item.data.toISOString().split('T')[0]
                   const selecionado = formData.data === dataStr
                   const hoje = new Date()
                   hoje.setHours(0, 0, 0, 0)
