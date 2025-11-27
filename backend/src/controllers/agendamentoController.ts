@@ -33,6 +33,18 @@ export const buscarAgendamentoPorId = async (req: Request, res: Response) => {
   }
 }
 
+// Função helper para converter string de data (YYYY-MM-DD) para Date local
+const parseLocalDate = (dateString: string): Date => {
+  // Se a string já tem timezone, usar diretamente
+  if (dateString.includes('T') || dateString.includes('Z')) {
+    return new Date(dateString)
+  }
+  
+  // Se é apenas YYYY-MM-DD, criar data local (meia-noite no timezone local)
+  const [year, month, day] = dateString.split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
+
 export const criarAgendamento = async (req: Request, res: Response) => {
   try {
     const { data, horario, status, observacoes, servicoId, usuarioId } = req.body
@@ -44,7 +56,7 @@ export const criarAgendamento = async (req: Request, res: Response) => {
     }
 
     const novoAgendamento = await criar({ 
-      data: new Date(data), 
+      data: parseLocalDate(data), 
       horario,
       status, 
       observacoes,
@@ -73,7 +85,7 @@ export const atualizarAgendamento = async (req: Request, res: Response) => {
     const { data, horario, status, observacoes, servicoId, usuarioId } = req.body
 
     const agendamentoAtualizado = await atualizar(Number(id), {
-      ...(data && { data: new Date(data) }),
+      ...(data && { data: parseLocalDate(data) }),
       ...(horario && { horario }),
       ...(status && { status }),
       ...(observacoes !== undefined && { observacoes }),
