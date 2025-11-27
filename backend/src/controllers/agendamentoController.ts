@@ -41,21 +41,7 @@ const parseLocalDate = (dateString: string): Date => {
   }
   
   // Se é apenas YYYY-MM-DD, criar data local (meia-noite no timezone local)
-  const parts = dateString.split('-')
-  if (parts.length !== 3) {
-    // Fallback para Date padrão se formato inválido
-    return new Date(dateString)
-  }
-  
-  const year = Number(parts[0])
-  const month = Number(parts[1])
-  const day = Number(parts[2])
-  
-  // Validar se os valores são números válidos
-  if (isNaN(year) || isNaN(month) || isNaN(day)) {
-    return new Date(dateString)
-  }
-  
+  const [year, month, day] = dateString.split('-').map(Number)
   return new Date(year, month - 1, day)
 }
 
